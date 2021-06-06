@@ -12,4 +12,13 @@ struct inode {
     }
 };
 
+// for dir inode, data contains the start pointer of its sons pointer list
+// struct dirson is pointer list node
+
+struct dirson {
+    char name[4096];
+    struct inode *node;
+    struct dirson *next;
+};
+
 #endif

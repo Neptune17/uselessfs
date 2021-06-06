@@ -19,22 +19,22 @@ struct filesystem {
 struct filesystem current_fs;
 
 static int uselessfs_getattr(const char *path, struct stat *stbuf) {
-  struct inode *_node;
-  if(path_to_inode(path, current_fs.root, &_node) == 0) {
-    return -errno;
-  }
+	struct inode *_node;
+	if(path_to_inode(path, current_fs.root, &_node) == 0) {
+		return -errno;
+	}
 
-  stbuf->st_mode   = _node->status.st_mode;
-  stbuf->st_nlink  = _node->status.st_nlink;
-  stbuf->st_size   = _node->status.st_size;
-  stbuf->st_blocks = _node->status.st_blocks;
-  stbuf->st_uid    = _node->status.st_uid;
-  stbuf->st_gid    = _node->status.st_gid;
-  stbuf->st_mtime  = _node->status.st_mtime;
-  stbuf->st_atime  = _node->status.st_atime;
-  stbuf->st_ctime  = _node->status.st_ctime;
+	stbuf->st_mode   = _node->status.st_mode;
+	stbuf->st_nlink  = _node->status.st_nlink;
+	stbuf->st_size   = _node->status.st_size;
+	stbuf->st_blocks = _node->status.st_blocks;
+	stbuf->st_uid    = _node->status.st_uid;
+	stbuf->st_gid    = _node->status.st_gid;
+	stbuf->st_mtime  = _node->status.st_mtime;
+	stbuf->st_atime  = _node->status.st_atime;
+	stbuf->st_ctime  = _node->status.st_ctime;
 
-  return 0;
+	return 0;
 }
 
 void init_root_inode(){
@@ -59,7 +59,7 @@ void init_root_inode(){
 }
 
 static struct fuse_operations uselessfs_oper = {
-  .getattr      = uselessfs_getattr
+  	.getattr	= 	uselessfs_getattr
 };
 
 int main(int argc, char *argv[]){

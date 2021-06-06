@@ -12,3 +12,4 @@ mkdir example
 to exit:
 
 fusermount -u example
+rm -r example
