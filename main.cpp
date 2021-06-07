@@ -13,6 +13,9 @@
 #include "inode.h"
 #include "utils.h"
 
+#include <iostream>
+using namespace std;
+
 struct filesystem {
     struct inode *root;
 };
@@ -40,8 +43,7 @@ static int uselessfs_mkdir(const char *path, mode_t mode) {
 	struct inode *newnode;
 	struct inode *fanode;
 
-	int ret = path_to_inode(safe_dirname(path), current_fs.root, &fanode);
-	if(ret == 0) {
+	if(path_to_inode(safe_dirname(path), current_fs.root, &fanode) == 0) {
 		return -errno;
 	}
 
@@ -62,7 +64,7 @@ static int uselessfs_mkdir(const char *path, mode_t mode) {
 	newnode->status.st_uid = fusectx->uid;
 	newnode->status.st_gid = fusectx->gid;
 
-	if(!add_dirson(fanode, safe_basename(path), newnode)) {
+	if(add_dirson(fanode, safe_basename(path), newnode) == 0) {
 		free(newnode);
 		return -errno;
 	}
@@ -71,6 +73,35 @@ static int uselessfs_mkdir(const char *path, mode_t mode) {
 
 	return 0;
 
+}
+
+static int uselessfs_rmdir(const char *path) {
+	
+	struct inode *tarnode;
+	struct inode *fanode;
+
+	if(path_to_inode(path, current_fs.root, &tarnode) == 0) {
+		return -errno;
+	}
+
+	if(!S_ISDIR(tarnode->status.st_mode)) {
+		return -ENOTDIR;
+	}
+
+	if(tarnode->data != NULL) {
+		return -ENOTEMPTY;
+	}
+
+	path_to_inode(safe_dirname(path), current_fs.root, &fanode);
+
+	int ret = erase_dirson(fanode, safe_basename(path), strlen(safe_basename(path)));
+
+	if(ret == 1){
+		return 0;
+	}
+	else{
+		return -errno;
+	}
 }
 
 static int uselessfs_open(const char *path, struct fuse_file_info *fi) {
@@ -98,7 +129,7 @@ static int uselessfs_write(const char *path, const char *buf, size_t size, off_t
 }
 
 static int memfs_release(const char *path, struct fuse_file_info *fi) {
-	
+
 }
 
 static int uselessfs_getattr(const char *path, struct stat *stbuf) {
@@ -144,6 +175,7 @@ void init_root_inode(){
 static struct fuse_operations uselessfs_oper = {
   	.getattr	= 	uselessfs_getattr,
 	.mkdir      = 	uselessfs_mkdir,
+	.rmdir		= 	uselessfs_rmdir
 };
 
 int main(int argc, char *argv[]){

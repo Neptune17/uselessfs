@@ -27,9 +27,41 @@ int find_dirson(struct inode *dirnode, const char *name, unsigned int namelen, s
 	return 0;
 }
 
+int erase_dirson(struct inode *fanode, const char* name, unsigned int namelen){
+
+	// find correct son under dir inode by compare name
+	
+	struct dirson *soniter = (struct dirson *) fanode->data;
+
+	struct dirson *preiter = NULL;
+
+	while(soniter != NULL) {
+		if(strlen(soniter->name) == namelen) {
+			if(strncmp(soniter->name, name, namelen) == 0) {
+
+				if (preiter != NULL){
+					preiter->next = soniter->next;
+				}
+				else{
+					fanode->data = NULL;
+				}
+
+				free(soniter);
+
+				return 1;
+			}
+		}
+		soniter = soniter->next;
+		preiter = soniter;
+	}
+
+	errno = ENOENT;
+
+	return 0;
+}
+
 int add_dirson(struct inode *fanode, const char* name, struct inode *childnode){
 
-	struct dirson *soniter = (struct dirson *) fanode->data;
 	struct dirson *newdirson = new dirson();
 
 	newdirson->node = childnode;
