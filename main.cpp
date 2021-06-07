@@ -38,6 +38,36 @@ char * safe_basename(const char *msg) {
 	return res;
 }
 
+static int uselessfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
+	
+	struct inode *tarnode;
+	if(path_to_inode(path, current_fs.root, &tarnode) == 0) {
+		return -errno;
+	}
+
+	if(!S_ISDIR(tarnode->status.st_mode)) {
+		return -ENOTDIR;
+	}
+
+	filler(buf, ".",  &tarnode->status, 0);
+	if(tarnode == current_fs.root) {
+		filler(buf, "..", NULL, 0);
+	} else {
+		struct inode *fanode;
+		path_to_inode(safe_dirname(path), current_fs.root, &fanode);
+		filler(buf, "..", &fanode->status, 0);
+	}
+
+	struct dirson *soniter = (struct dirson *) tarnode->data;
+	while(soniter != NULL) {
+		if(filler(buf, soniter->name, &soniter->node->status, 0))
+			break;
+		soniter = soniter->next;
+	}
+
+	return 0;
+}
+
 static int uselessfs_mkdir(const char *path, mode_t mode) {
 
 	struct inode *newnode;
@@ -114,6 +144,39 @@ static int uselessfs_read(const char *path, char *buf, size_t size, off_t offset
 
 static int uselessfs_mknod(const char *path, mode_t mode, dev_t rdev) {
 
+	struct inode *newnode;
+	struct inode *fanode;
+
+	if(path_to_inode(safe_dirname(path), current_fs.root, &fanode) == 0) {
+		return -errno;
+	}
+
+	newnode = new inode();
+
+	time_t now = time(0);
+
+    newnode->status.st_atime = now;
+    newnode->status.st_ctime = now;
+    newnode->status.st_mtime = now;
+
+    newnode->status.st_mode = mode;
+    newnode->status.st_nlink = 0;
+    newnode->status.st_size = 0;
+    newnode->status.st_blocks = 0;
+
+	struct fuse_context *fusectx = fuse_get_context();
+	newnode->status.st_uid = fusectx->uid;
+	newnode->status.st_gid = fusectx->gid;
+
+	if(add_dirson(fanode, safe_basename(path), newnode) == 0) {
+		free(newnode);
+		return -errno;
+	}
+
+	newnode->data = NULL;
+
+	return 0;
+
 }
 
 static int uselessfs_unlink(const char *path) {
@@ -128,7 +191,7 @@ static int uselessfs_write(const char *path, const char *buf, size_t size, off_t
 
 }
 
-static int memfs_release(const char *path, struct fuse_file_info *fi) {
+static int useless_release(const char *path, struct fuse_file_info *fi) {
 
 }
 
@@ -174,8 +237,10 @@ void init_root_inode(){
 
 static struct fuse_operations uselessfs_oper = {
   	.getattr	= 	uselessfs_getattr,
+	.mknod		= 	uselessfs_mknod,
 	.mkdir      = 	uselessfs_mkdir,
-	.rmdir		= 	uselessfs_rmdir
+	.rmdir		= 	uselessfs_rmdir,
+	.readdir	= 	uselessfs_readdir,
 };
 
 int main(int argc, char *argv[]){
