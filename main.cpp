@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <libgen.h>
 #include <errno.h>
 
 #include <sys/time.h>
@@ -17,6 +18,72 @@ struct filesystem {
 };
 
 struct filesystem current_fs;
+
+char * safe_dirname(const char *msg) {
+	char *buf = strdup(msg);
+	char *dir = dirname(buf);
+	char *res = strdup(dir);
+	free(buf);
+	return res;
+}
+
+char * safe_basename(const char *msg) {
+	char *buf = strdup(msg);
+	char *nam = basename(buf);
+	char *res = strdup(nam);
+	free(buf);
+	return res;
+}
+
+static int uselessfs_mkdir(const char *path, mode_t mode) {
+
+	struct inode *newnode;
+	struct inode *fanode;
+
+	int ret = path_to_inode(safe_dirname(path), current_fs.root, &fanode);
+	if(ret == 0) {
+		return -errno;
+	}
+
+	newnode = new inode();
+
+	time_t now = time(0);
+
+    newnode->status.st_atime = now;
+    newnode->status.st_ctime = now;
+    newnode->status.st_mtime = now;
+
+    newnode->status.st_mode = S_IFDIR | mode;
+    newnode->status.st_nlink = 0;
+    newnode->status.st_size = 0;
+    newnode->status.st_blocks = 0;
+
+	struct fuse_context *fusectx = fuse_get_context();
+	newnode->status.st_uid = fusectx->uid;
+	newnode->status.st_gid = fusectx->gid;
+
+	if(!add_dirson(fanode, safe_basename(path), newnode)) {
+		free(newnode);
+		return -errno;
+	}
+
+	newnode->data = NULL;
+
+	return 0;
+
+}
+
+static int uselessfs_open(const char *path, struct fuse_file_info *fi) {
+
+}
+
+static int uselessfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+
+}
+
+static int uselessfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
+
+}
 
 static int uselessfs_getattr(const char *path, struct stat *stbuf) {
 	struct inode *_node;
@@ -59,7 +126,8 @@ void init_root_inode(){
 }
 
 static struct fuse_operations uselessfs_oper = {
-  	.getattr	= 	uselessfs_getattr
+  	.getattr	= 	uselessfs_getattr,
+	.mkdir      = 	uselessfs_mkdir,
 };
 
 int main(int argc, char *argv[]){

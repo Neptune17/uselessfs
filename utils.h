@@ -27,6 +27,27 @@ int find_dirson(struct inode *dirnode, const char *name, unsigned int namelen, s
 	return 0;
 }
 
+int add_dirson(struct inode *fanode, const char* name, struct inode *childnode){
+
+	struct dirson *soniter = (struct dirson *) fanode->data;
+	struct dirson *newdirson = new dirson();
+
+	newdirson->node = childnode;
+	strcpy(newdirson->name, name);
+
+	if(find_dirson(fanode, name, strlen(newdirson->name), &newdirson) == 1){
+		errno = EEXIST;
+		return 0;
+	}
+
+	newdirson->next = *((struct dirson **) &fanode->data);
+	fanode->data = newdirson;
+
+	fanode->status.st_nlink++;
+
+	return 1;
+}
+
 int path_to_inode(const char *path, struct inode *root, struct inode **retnode){
 	
 	if(!S_ISDIR(root->status.st_mode)) {
