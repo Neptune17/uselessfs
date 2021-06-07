@@ -81,8 +81,24 @@ static int uselessfs_read(const char *path, char *buf, size_t size, off_t offset
 
 }
 
+static int uselessfs_mknod(const char *path, mode_t mode, dev_t rdev) {
+
+}
+
+static int uselessfs_unlink(const char *path) {
+
+}
+
+static int uselessfs_rename(const char *from, const char *to) {
+
+}
+
 static int uselessfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
 
+}
+
+static int memfs_release(const char *path, struct fuse_file_info *fi) {
+	
 }
 
 static int uselessfs_getattr(const char *path, struct stat *stbuf) {
