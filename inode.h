@@ -7,8 +7,13 @@ struct inode {
     struct stat status;
     void* data;
 
+    int fd_counter;
+    bool delete_label;
+
     inode(){
         this->data = NULL;
+        this->fd_counter = 0;
+        this->delete_label = false;
     }
 };
 
